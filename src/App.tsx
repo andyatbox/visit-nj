@@ -4,11 +4,17 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 const TEXTURES = ['/ball-1.jpg', '/ball-2.jpg', '/ball-3.jpg', '/ball-4.jpg'];
 
+function getInitialIndex() {
+  const param = new URLSearchParams(window.location.search).get('ball');
+  const n = parseInt(param ?? '1', 10);
+  return Math.min(Math.max(n - 1, 0), TEXTURES.length - 1);
+}
+
 export default function App() {
   const mountRef = useRef<HTMLDivElement>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const activeTextureRef = useRef<THREE.Texture | null>(null);
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(getInitialIndex);
 
   useEffect(() => {
     const mountEl = mountRef.current;
@@ -39,7 +45,7 @@ export default function App() {
 
     // --- LOAD INITIAL TEXTURE ---
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(TEXTURES[0], (tex) => {
+    textureLoader.load(TEXTURES[getInitialIndex()], (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       material.map = tex;
       material.needsUpdate = true;
@@ -88,6 +94,9 @@ export default function App() {
     const material = materialRef.current;
     if (!material) return;
     setActive(index);
+    const params = new URLSearchParams(window.location.search);
+    params.set('ball', String(index + 1));
+    window.history.replaceState(null, '', '?' + params.toString());
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(TEXTURES[index], (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
