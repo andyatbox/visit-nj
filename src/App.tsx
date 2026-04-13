@@ -1,41 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// 1. Procedural Texture Generator (Fallback)
-// We use a 2:1 aspect ratio canvas for perfect equirectangular mapping
-function createFallbackTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 2048; // 2:1 aspect ratio
-  canvas.height = 1024;
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) throw new Error('Could not get 2d context');
-
-  // Create a smooth, non-distorting horizontal gradient (latitudinal bands)
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, '#0a2342');
-  gradient.addColorStop(0.5, '#4ba3c3');
-  gradient.addColorStop(1, '#0a2342');
-
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Add subtle horizontal bands which wrap perfectly around the sphere without pole distortion
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-  for (let i = 0; i < canvas.height; i += 40) {
-    ctx.fillRect(0, i, canvas.width, 20);
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.colorSpace = THREE.SRGBColorSpace; // Modern color space handling
-  return texture;
-}
+const TEXTURES = ['/ball-1.jpg', '/ball-2.jpg', '/ball-3.jpg', '/ball-4.jpg'];
 
 export default function App() {
   const mountRef = useRef<HTMLDivElement>(null);
+  const materialRef = useRef<THREE.MeshBasicMaterial | null>(null);
+  const activeTextureRef = useRef<THREE.Texture | null>(null);
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     const mountEl = mountRef.current;
@@ -46,13 +19,7 @@ export default function App() {
     scene.background = new THREE.Color(0xffffff);
 
     // --- CAMERA SETUP ---
-    // Positioned at -Z to look directly at the horizontal center of the texture map
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      100
-    );
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 0, 4.5);
 
     // --- RENDERER SETUP ---
@@ -63,32 +30,21 @@ export default function App() {
 
     // --- GEOMETRY & MATERIAL ---
     const geometry = new THREE.SphereGeometry(1.2, 64, 64);
-
-    const fallbackTexture = createFallbackTexture();
-    const material = new THREE.MeshBasicMaterial({
-      map: fallbackTexture,
-    });
+    const material = new THREE.MeshBasicMaterial();
+    materialRef.current = material;
 
     const sphereMesh = new THREE.Mesh(geometry, material);
-    // Rotate sphere so the center of the texture faces the camera at +Z
-    // SphereGeometry maps texture center to -X, so rotate +90° to face +Z
     sphereMesh.rotation.y = -Math.PI / 2;
     scene.add(sphereMesh);
 
-    // --- LOAD TEXTURE ---
+    // --- LOAD INITIAL TEXTURE ---
     const textureLoader = new THREE.TextureLoader();
-
-    let activeTexture: THREE.Texture = fallbackTexture;
-
-    textureLoader.load(
-      '/ball-1.jpg',
-      (loadedTexture) => {
-        loadedTexture.colorSpace = THREE.SRGBColorSpace;
-        material.map = loadedTexture;
-        material.needsUpdate = true;
-        activeTexture = loadedTexture;
-      }
-    );
+    textureLoader.load(TEXTURES[0], (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      material.map = tex;
+      material.needsUpdate = true;
+      activeTextureRef.current = tex;
+    });
 
     // --- CONTROLS ---
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -119,27 +75,48 @@ export default function App() {
     return () => {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
-
-      if (mountEl.contains(renderer.domElement)) {
-        mountEl.removeChild(renderer.domElement);
-      }
-
+      if (mountEl.contains(renderer.domElement)) mountEl.removeChild(renderer.domElement);
       controls.dispose();
       renderer.dispose();
       geometry.dispose();
       material.dispose();
-      fallbackTexture.dispose();
-
-      if (activeTexture !== fallbackTexture) {
-        activeTexture.dispose();
-      }
+      activeTextureRef.current?.dispose();
     };
   }, []);
 
+  const switchTexture = (index: number) => {
+    const material = materialRef.current;
+    if (!material) return;
+    setActive(index);
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(TEXTURES[index], (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const prev = activeTextureRef.current;
+      material.map = tex;
+      material.needsUpdate = true;
+      activeTextureRef.current = tex;
+      prev?.dispose();
+    });
+  };
+
   return (
-    <div
-      ref={mountRef}
-      className="w-screen h-screen overflow-hidden bg-white"
-    />
+    <div className="relative w-screen h-screen overflow-hidden bg-white">
+      <div ref={mountRef} className="absolute inset-0" />
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3">
+        {TEXTURES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => switchTexture(i)}
+            className={`px-5 py-2 rounded-full text-sm font-semibold shadow-lg transition-all ${
+              active === i
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            Ball {i + 1}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
