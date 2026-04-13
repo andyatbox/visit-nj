@@ -53,37 +53,26 @@ export default function App() {
       0.1,
       100
     );
-    camera.position.set(0, 0, -4.5);
+    camera.position.set(0, 0, 4.5);
 
     // --- RENDERER SETUP ---
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Sharp rendering on high DPI screens
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mountEl.appendChild(renderer.domElement);
-
-    // --- LIGHTING ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft overall light
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2); // Main key light
-    directionalLight.position.set(0, 0, -5); // Light the face seen from the starting camera position (-Z)
-    scene.add(directionalLight);
-
-    const fillLight = new THREE.DirectionalLight(0xe0eaff, 0.4); // Cool fill light
-    fillLight.position.set(0, -2, 5); // Moved to the opposite side to provide backlight/fill
-    scene.add(fillLight);
 
     // --- GEOMETRY & MATERIAL ---
     const geometry = new THREE.SphereGeometry(1.2, 64, 64);
 
     const fallbackTexture = createFallbackTexture();
-    const material = new THREE.MeshStandardMaterial({
+    const material = new THREE.MeshBasicMaterial({
       map: fallbackTexture,
-      roughness: 0.65,
-      metalness: 0.05,
     });
 
     const sphereMesh = new THREE.Mesh(geometry, material);
+    // Rotate sphere so the center of the texture faces the camera at +Z
+    // SphereGeometry maps texture center to -X, so rotate +90° to face +Z
+    sphereMesh.rotation.y = -Math.PI / 2;
     scene.add(sphereMesh);
 
     // --- LOAD TEXTURE ---
