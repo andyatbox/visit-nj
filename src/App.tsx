@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const TEXTURES = ['/ball-1.jpg', '/ball-2.jpg', '/ball-3.jpg', '/ball-4.jpg'];
+const TEXTURES = ['/ball-1.jpg', '/ball-2.jpg', '/ball-3.jpg', '/ball-4.jpg', '/ball-5.jpg'];
 
 function getInitialIndex() {
   const param = new URLSearchParams(window.location.search).get('ball');
