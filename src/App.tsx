@@ -86,25 +86,18 @@ export default function App() {
     const sphereMesh = new THREE.Mesh(geometry, material);
     scene.add(sphereMesh);
 
-    // --- LOAD EXTERNAL TEXTURE ---
+    // --- LOAD TEXTURE ---
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.setCrossOrigin('anonymous');
-    const textureUrl = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/textures/planets/earth_atmos_2048.jpg';
 
     let activeTexture: THREE.Texture = fallbackTexture;
 
     textureLoader.load(
-      textureUrl,
+      '/ball-1.jpg',
       (loadedTexture) => {
-        // On Success: swap out the procedural fallback for the real bitmap
         loadedTexture.colorSpace = THREE.SRGBColorSpace;
         material.map = loadedTexture;
         material.needsUpdate = true;
         activeTexture = loadedTexture;
-      },
-      undefined,
-      () => {
-        console.info('External image blocked by CORS or unavailable. Utilizing generated procedural bitmap texture.');
       }
     );
 
