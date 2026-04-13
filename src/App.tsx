@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -103,7 +103,7 @@ export default function App() {
         activeTexture = loadedTexture;
       },
       undefined,
-      (error) => {
+      () => {
         console.info('External image blocked by CORS or unavailable. Utilizing generated procedural bitmap texture.');
       }
     );
