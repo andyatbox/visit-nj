@@ -14,6 +14,8 @@ export default function App() {
   const mountRef = useRef<HTMLDivElement>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const activeTextureRef = useRef<THREE.Texture | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
   const [active, setActive] = useState(getInitialIndex);
 
   useEffect(() => {
@@ -52,8 +54,11 @@ export default function App() {
       activeTextureRef.current = tex;
     });
 
+    cameraRef.current = camera;
+
     // --- CONTROLS ---
     const controls = new OrbitControls(camera, renderer.domElement);
+    controlsRef.current = controls;
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.enablePan = false;
@@ -97,6 +102,16 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     params.set('ball', String(index + 1));
     window.history.replaceState(null, '', '?' + params.toString());
+
+    // Reset camera and controls to initial position
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (camera && controls) {
+      camera.position.set(0, 0, 4.5);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    }
+
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(TEXTURES[index], (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
